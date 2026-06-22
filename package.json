@@ -7,6 +7,7 @@
     "dev:backend": "tsx backend/src/index.ts",
     "dev:frontend": "vite",
     "build": "vite build",
+    "prebuild:backend": "node -e \"try{require('fs').rmSync('node_modules/.vite',{recursive:true,force:true})}catch(e){}\"",
     "build:backend": "tsc -p backend/tsconfig.json",
     "start:backend": "node backend/dist/index.js",
     "preview": "vite preview",
