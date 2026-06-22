@@ -6,7 +6,8 @@ import { parseReminderText } from './ai'
 const app = express()
 const port = Number(process.env.PORT || 4000)
 
-app.use(cors())
+app.use(cors({ origin: '*' }))
+app.options('*', cors())
 app.use(express.json())
 
 initDb()
