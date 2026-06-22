@@ -15,7 +15,16 @@ export default function ReminderList({reminders, onUpdate, onRemove}: Props){
         <div className="card" key={r.id}>
           <div className="card-main">
             <h3>{r.title}</h3>
-            <p className="time">{new Date(r.time).toLocaleString()}</p>
+            <p className="time">{new Date(r.time).toLocaleString('ru-RU', {
+              timeZone: 'Europe/Moscow',
+              year: 'numeric',
+              month: '2-digit',
+              day: '2-digit',
+              hour: '2-digit',
+              minute: '2-digit',
+              second: '2-digit',
+              hour12: false
+            })}</p>
             {r.body && <p className="body">{r.body}</p>}
           </div>
           <div className="card-actions">
