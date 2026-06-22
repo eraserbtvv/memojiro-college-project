@@ -6,6 +6,7 @@ type Props = {
 }
 
 export default function AiReminder({ onGenerate }: Props) {
+  const API = import.meta.env.VITE_API_URL ?? ''
   const [text, setText] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -14,11 +15,16 @@ export default function AiReminder({ onGenerate }: Props) {
     e.preventDefault()
     if (!text.trim()) return
 
+    if (!API) {
+      setError('VITE_API_URL не настроен. Проверьте переменные окружения в Vercel и redeploy.')
+      return
+    }
+
     setLoading(true)
     setError(null)
 
     try {
-      const response = await fetch('/api/ai/parse', {
+      const response = await fetch(`${API}/api/ai/parse`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text })

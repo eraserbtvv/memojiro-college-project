@@ -1,3 +1,4 @@
+import 'dotenv/config'
 import express from 'express'
 import cors from 'cors'
 import { initDb, getAllReminders, createReminder, updateReminder, deleteReminder, getReminderById } from './db'
@@ -14,6 +15,10 @@ initDb()
 app.get('/api/reminders', (_req, res) => {
   const reminders = getAllReminders()
   res.json(reminders)
+})
+
+app.get('/api/health', (_req, res) => {
+  res.json({ ok: true })
 })
 
 app.post('/api/ai/parse', async (req, res) => {

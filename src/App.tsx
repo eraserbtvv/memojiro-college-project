@@ -14,11 +14,17 @@ export type Reminder = {
 export type NewReminder = Omit<Reminder, 'id' | 'done'>
 
 export default function App(){
+  const API = import.meta.env.VITE_API_URL ?? ''
   const [reminders, setReminders] = useState<Reminder[]>([])
   const [error, setError] = useState<string | null>(null)
 
   useEffect(()=>{
-    fetch('/api/reminders')
+    if (!API) {
+      setError('VITE_API_URL не настроен. Проверьте переменные окружения в Vercel и redeploy.');
+      return
+    }
+
+    fetch(`${API}/api/reminders`)
       .then(res => res.json())
       .then((data: Reminder[]) => setReminders(data))
       .catch(() => setError('Не удалось загрузить напоминания.'))
@@ -46,7 +52,7 @@ export default function App(){
 
   async function addReminder(r: NewReminder){
     try {
-      const response = await fetch('/api/reminders', {
+      const response = await fetch(`${API}/api/reminders`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(r)
@@ -60,7 +66,7 @@ export default function App(){
 
   async function updateReminder(updated: Reminder){
     try {
-      const response = await fetch(`/api/reminders/${updated.id}`, {
+      const response = await fetch(`${API}/api/reminders/${updated.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updated)
@@ -74,7 +80,7 @@ export default function App(){
 
   async function removeReminder(id: string){
     try {
-      await fetch(`/api/reminders/${id}`, { method: 'DELETE' })
+      await fetch(`${API}/api/reminders/${id}`, { method: 'DELETE' })
       setReminders(prev => prev.filter(p => p.id !== id))
     } catch {
       setError('Не удалось удалить напоминание.')
