@@ -10,6 +10,13 @@ app.use(cors({ origin: '*' }))
 app.options('*', cors())
 app.use(express.json())
 
+process.on('uncaughtException', error => {
+  console.error('uncaughtException', error)
+})
+process.on('unhandledRejection', reason => {
+  console.error('unhandledRejection', reason)
+})
+
 initDb()
 
 app.get('/', (_req, res) => {
