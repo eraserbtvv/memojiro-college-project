@@ -1,4 +1,3 @@
-import 'dotenv/config'
 import express from 'express'
 import cors from 'cors'
 import { initDb, getAllReminders, createReminder, updateReminder, deleteReminder, getReminderById } from './db'
@@ -11,6 +10,10 @@ app.use(cors())
 app.use(express.json())
 
 initDb()
+
+app.get('/', (_req, res) => {
+  res.json({ ok: true, service: 'memojiro backend' })
+})
 
 app.get('/api/reminders', (_req, res) => {
   const reminders = getAllReminders()
