@@ -18,74 +18,98 @@ function moscowDateToUtc(year: number, month: number, day: number, hours: number
   return new Date(utcMs)
 }
 
+function extractTime(text: string): { hours: number, minutes: number } | null {
+  // 1. Ищем строгий формат "14:30"
+  const exactTime = text.match(/\b(\d{1,2}):(\d{2})\b/);
+  if (exactTime) {
+    return { hours: Number(exactTime[1]), minutes: Number(exactTime[2]) };
+  }
+
+  const wordTime = text.match(/\b(?:в|at)\s+(\d{1,2})(?::(\d{2}))?\s*(утра|вечера|дня|ночи|am|pm)?\b/i);
+  if (wordTime) {
+    let hours = Number(wordTime[1]);
+    const minutes = Number(wordTime[2] || 0);
+    const modifier = wordTime[3]?.toLowerCase();
+
+    if (modifier) {
+      if (['вечера', 'pm'].includes(modifier) && hours < 12) hours += 12;
+      if (['дня'].includes(modifier) && hours < 12 && hours >= 1) hours += 12; 
+      if (['утра', 'ночи', 'am'].includes(modifier) && hours === 12) hours = 0;
+    }
+    return { hours, minutes };
+  }
+
+  return null;
+}
+
 function parseDateFromText(text: string): string {
   const moscowNow = nowInMoscow()
   const tomorrow = /\btomorrow\b|\bзавтра\b/i.test(text)
   const today = /\btoday\b|\bсегодня\b/i.test(text)
-  const inHours = text.match(/\b(in|через)\s+(\d+)\s*hours?|\bчерез\s+(\d+)\s*ч(?:ас(?:ов?)?)?/i)
-  const atTime = text.match(/\b(\d{1,2}):(\d{2})\b/)
+  const inHours = text.match(/\b(?:in|через)\s+(\d+)\s*(?:hours?|ч(?:ас(?:ов|а)?)?)\b/i)
   const dateMatch = text.match(/\b(\d{1,2})[./-](\d{1,2})(?:[./-](\d{2,4}))?\b/)
+
+  const parsedTime = extractTime(text)
 
   const year = moscowNow.getFullYear()
   const month = moscowNow.getMonth() + 1
   const day = moscowNow.getDate()
 
+  const moscowTomorrow = new Date(moscowNow.getTime())
+  moscowTomorrow.setDate(moscowTomorrow.getDate() + 1) 
+  const tomYear = moscowTomorrow.getFullYear()
+  const tomMonth = moscowTomorrow.getMonth() + 1
+  const tomDay = moscowTomorrow.getDate()
+
   if (inHours) {
-    const hours = Number(inHours[2] ?? inHours[3])
+    const hours = Number(inHours[1])
     if (!Number.isNaN(hours)) {
-      const utcTs = moscowNow.getTime() + hours * 60_000 * 60
-      return new Date(utcTs).toISOString()
+      const realUtcNow = new Date()
+      return new Date(realUtcNow.getTime() + hours * 3600_000).toISOString()
     }
   }
 
   if (tomorrow) {
-    const tomorrowDate = new Date(Date.UTC(year, month - 1, day, 0, 0) - MOSCOW_OFFSET_MINUTES * 60_000 + 24 * 60_60_000)
-    if (atTime) {
-      const hours = Number(atTime[1])
-      const minutes = Number(atTime[2])
-      return moscowDateToUtc(tomorrowDate.getUTCFullYear(), tomorrowDate.getUTCMonth() + 1, tomorrowDate.getUTCDate(), hours, minutes).toISOString()
+    if (parsedTime) {
+      return moscowDateToUtc(tomYear, tomMonth, tomDay, parsedTime.hours, parsedTime.minutes).toISOString()
     }
-    const utcTs = tomorrowDate.getTime()
-    return new Date(utcTs).toISOString()
+    return moscowDateToUtc(tomYear, tomMonth, tomDay, 0, 0).toISOString()
   }
 
-  if (today && atTime) {
-    const hours = Number(atTime[1])
-    const minutes = Number(atTime[2])
-    return moscowDateToUtc(year, month, day, hours, minutes).toISOString()
+  if (today && parsedTime) {
+    return moscowDateToUtc(year, month, day, parsedTime.hours, parsedTime.minutes).toISOString()
   }
 
   if (dateMatch) {
     const parsedDay = Number(dateMatch[1])
     const parsedMonth = Number(dateMatch[2])
     const parsedYear = Number(dateMatch[3] ?? year)
-    if (atTime) {
-      const hours = Number(atTime[1])
-      const minutes = Number(atTime[2])
-      return moscowDateToUtc(parsedYear, parsedMonth, parsedDay, hours, minutes).toISOString()
+    if (parsedTime) {
+      return moscowDateToUtc(parsedYear, parsedMonth, parsedDay, parsedTime.hours, parsedTime.minutes).toISOString()
     }
     return moscowDateToUtc(parsedYear, parsedMonth, parsedDay, moscowNow.getHours(), moscowNow.getMinutes()).toISOString()
   }
 
-  if (atTime) {
-    const hours = Number(atTime[1])
-    const minutes = Number(atTime[2])
-    let candidate = moscowDateToUtc(year, month, day, hours, minutes)
+  if (parsedTime) {
+    let candidate = moscowDateToUtc(year, month, day, parsedTime.hours, parsedTime.minutes)
     const candidateLocal = new Date(candidate.getTime() + MOSCOW_OFFSET_MINUTES * 60_000)
+    
     if (candidateLocal.getTime() < moscowNow.getTime()) {
-      const tomorrowDate = new Date(Date.UTC(year, month - 1, day, 0, 0) - MOSCOW_OFFSET_MINUTES * 60_000 + 24 * 60 * 60_000)
-      return moscowDateToUtc(tomorrowDate.getUTCFullYear(), tomorrowDate.getUTCMonth() + 1, tomorrowDate.getUTCDate(), hours, minutes).toISOString()
+      return moscowDateToUtc(tomYear, tomMonth, tomDay, parsedTime.hours, parsedTime.minutes).toISOString()
     }
     return candidate.toISOString()
   }
 
-  const utcTs = moscowNow.getTime() + 60 * 60_000
-  return new Date(utcTs).toISOString()
+  const realUtcNow = new Date()
+  return new Date(realUtcNow.getTime() + 3600_000).toISOString()
 }
 
 export async function parseReminderText(text: string): Promise<ParsedReminder> {
-  const cleaned = text.replace(/\b(today|tomorrow|сегодня|завтра|in\s+\d+\s*hours?|через\s+\d+\s*ч(?:ас(?:ов?)?)?|at\s+\d{1,2}:\d{2})\b/gi, '').trim()
+  const regexForCleanup = /\b(today|tomorrow|сегодня|завтра|in\s+\d+\s*hours?|через\s+\d+\s*ч(?:ас(?:ов|а)?)?|at\s+\d{1,2}(:\d{2})?|в\s+\d{1,2}(:\d{2})?\s*(утра|вечера|дня|ночи)?)\b/gi
+  
+  const cleaned = text.replace(regexForCleanup, '').replace(/\s{2,}/g, ' ').trim()
   const title = cleaned.length > 0 ? cleaned : 'Новое напоминание'
+  
   return {
     title: title.slice(0, 80),
     body: text,
