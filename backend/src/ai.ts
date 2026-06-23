@@ -19,21 +19,21 @@ function moscowDateToUtc(year: number, month: number, day: number, hours: number
 }
 
 function extractTime(text: string): { hours: number, minutes: number } | null {
-  // 1. Ищем строгий формат "14:30"
-  const exactTime = text.match(/\b(\d{1,2}):(\d{2})\b/);
+
+  const exactTime = text.match(/(?:^|\s)(\d{1,2}):(\d{2})(?=\s|$|[.,!?])/);
   if (exactTime) {
     return { hours: Number(exactTime[1]), minutes: Number(exactTime[2]) };
   }
 
-  const wordTime = text.match(/\b(?:в|at)\s+(\d{1,2})(?::(\d{2}))?\s*(утра|вечера|дня|ночи|am|pm)?\b/i);
+  const wordTime = text.match(/(?:^|\s)(?:в|at)\s+(\d{1,2})(?::(\d{2}))?(?:\s+(утра|вечера|дня|ночи|am|pm))?(?=\s|$|[.,!?])/i);
   if (wordTime) {
     let hours = Number(wordTime[1]);
-    const minutes = Number(wordTime[2] || 0);
+    const minutes = Number(wordTime[2] || 0); 
     const modifier = wordTime[3]?.toLowerCase();
 
     if (modifier) {
       if (['вечера', 'pm'].includes(modifier) && hours < 12) hours += 12;
-      if (['дня'].includes(modifier) && hours < 12 && hours >= 1) hours += 12; 
+      if (['дня'].includes(modifier) && hours < 12 && hours >= 1) hours += 12;
       if (['утра', 'ночи', 'am'].includes(modifier) && hours === 12) hours = 0;
     }
     return { hours, minutes };
@@ -44,10 +44,11 @@ function extractTime(text: string): { hours: number, minutes: number } | null {
 
 function parseDateFromText(text: string): string {
   const moscowNow = nowInMoscow()
-  const tomorrow = /\btomorrow\b|\bзавтра\b/i.test(text)
-  const today = /\btoday\b|\bсегодня\b/i.test(text)
-  const inHours = text.match(/\b(?:in|через)\s+(\d+)\s*(?:hours?|ч(?:ас(?:ов|а)?)?)\b/i)
-  const dateMatch = text.match(/\b(\d{1,2})[./-](\d{1,2})(?:[./-](\d{2,4}))?\b/)
+  
+  const tomorrow = /(?:^|\s)(tomorrow|завтра)(?=\s|$|[.,!?])/i.test(text)
+  const today = /(?:^|\s)(today|сегодня)(?=\s|$|[.,!?])/i.test(text)
+  const inHours = text.match(/(?:^|\s)(?:in|через)\s+(\d+)\s*(?:hours?|ч(?:ас(?:ов|а)?)?)(?=\s|$|[.,!?])/i)
+  const dateMatch = text.match(/(?:^|\s)(\d{1,2})[./-](\d{1,2})(?:[./-](\d{2,4}))?(?=\s|$|[.,!?])/)
 
   const parsedTime = extractTime(text)
 
@@ -56,7 +57,7 @@ function parseDateFromText(text: string): string {
   const day = moscowNow.getDate()
 
   const moscowTomorrow = new Date(moscowNow.getTime())
-  moscowTomorrow.setDate(moscowTomorrow.getDate() + 1) 
+  moscowTomorrow.setDate(moscowTomorrow.getDate() + 1)
   const tomYear = moscowTomorrow.getFullYear()
   const tomMonth = moscowTomorrow.getMonth() + 1
   const tomDay = moscowTomorrow.getDate()
@@ -105,9 +106,9 @@ function parseDateFromText(text: string): string {
 }
 
 export async function parseReminderText(text: string): Promise<ParsedReminder> {
-  const regexForCleanup = /\b(today|tomorrow|сегодня|завтра|in\s+\d+\s*hours?|через\s+\d+\s*ч(?:ас(?:ов|а)?)?|at\s+\d{1,2}(:\d{2})?|в\s+\d{1,2}(:\d{2})?\s*(утра|вечера|дня|ночи)?)\b/gi
+  const regexForCleanup = /(?:^|\s)(today|tomorrow|сегодня|завтра|in\s+\d+\s*hours?|через\s+\d+\s*ч(?:ас(?:ов|а)?)?|at\s+\d{1,2}(:\d{2})?|в\s+\d{1,2}(:\d{2})?(?:\s+(утра|вечера|дня|ночи|am|pm))?)(?=\s|$|[.,!?])/gi
   
-  const cleaned = text.replace(regexForCleanup, '').replace(/\s{2,}/g, ' ').trim()
+  const cleaned = text.replace(regexForCleanup, ' ').replace(/\s{2,}/g, ' ').trim()
   const title = cleaned.length > 0 ? cleaned : 'Новое напоминание'
   
   return {
