@@ -6,6 +6,12 @@ export type ParsedReminder = {
 
 const MOSCOW_OFFSET_MINUTES = 180
 
+const MONTHS: Record<string, number> = {
+  'января': 1, 'февраля': 2, 'марта': 3, 'апреля': 4,
+  'мая': 5, 'июня': 6, 'июля': 7, 'августа': 8,
+  'сентября': 9, 'октября': 10, 'ноября': 11, 'декабря': 12
+}
+
 function nowInMoscow(): Date {
   const local = new Date()
   const utcMs = local.getTime() + local.getTimezoneOffset() * 60_000
@@ -48,6 +54,7 @@ function parseDateFromText(text: string): string {
   const tomorrow = /(?:^|\s)(tomorrow|завтра)(?=\s|$|[.,!?])/i.test(text)
   const inHours = text.match(/(?:^|\s)(?:in|через)\s+(\d+)\s*(?:hours?|ч(?:ас(?:ов|а)?)?)(?=\s|$|[.,!?])/i)
   const dateMatch = text.match(/(?:^|\s)(\d{1,2})[./-](\d{1,2})(?:[./-](\d{2,4}))?(?=\s|$|[.,!?])/)
+  const textDateMatch = text.match(/(?:^|\s)(\d{1,2})\s+(января|февраля|марта|апреля|мая|июня|июля|августа|сентября|октября|ноября|декабря)(?=\s|$|[.,!?])/i)
 
   const parsedTime = extractTime(text)
 
@@ -68,8 +75,24 @@ function parseDateFromText(text: string): string {
   const datYear = moscowDayAfterTomorrow.getFullYear()
   const datMonth = moscowDayAfterTomorrow.getMonth() + 1
   const datDay = moscowDayAfterTomorrow.getDate()
+ 
+  if (textDateMatch) {
+    const parsedDay = Number(textDateMatch[1])
+    const monthName = textDateMatch[2].toLowerCase()
+    const parsedMonth = MONTHS[monthName]
+    let parsedYear = year
 
-  // 1. ПРИОРИТЕТ: Конкретная дата (например, 25.06)
+    // Если запрошенный месяц уже прошел в этом году (например, сейчас июнь, а просят май), переносим на следующий год
+    if (parsedMonth < month || (parsedMonth === month && parsedDay < day)) {
+      parsedYear += 1
+    }
+
+    if (parsedTime) {
+      return moscowDateToUtc(parsedYear, parsedMonth, parsedDay, parsedTime.hours, parsedTime.minutes).toISOString()
+    }
+    return moscowDateToUtc(parsedYear, parsedMonth, parsedDay, moscowNow.getHours(), moscowNow.getMinutes()).toISOString()
+  }
+
   if (dateMatch) {
     const parsedDay = Number(dateMatch[1])
     const parsedMonth = Number(dateMatch[2])
