@@ -24,10 +24,13 @@ export default function App(){
       return
     }
 
-    fetch(`${API}/api/reminders`)
-      .then(res => res.json())
-      .then((data: Reminder[]) => setReminders(data))
-      .catch(() => setError('Не удалось загрузить напоминания.'))
+  fetch(`${API}/api/reminders`)
+    .then(res => res.json())
+    .then((data: Reminder[]) => {
+      const sortedData = [...data].sort((a, b) => new Date(a.time).getTime() - new Date(b.time).getTime());
+      setReminders(sortedData);
+    })
+    .catch(() => setError('Не удалось загрузить напоминания.'))
   }, [])
 
   useEffect(()=>{
