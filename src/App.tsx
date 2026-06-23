@@ -103,7 +103,8 @@ export default function App(){
         <ReminderList reminders={reminders} onUpdate={updateReminder} onRemove={removeReminder} />
       </main>
       <footer>
-        <small>Project scaffolded for practice report — see /docs for templates.</small>
+        <small>Maxim Smirnov @ eraserbtvv</small>
+        <small>Используется НЕ генеративный AI</small>
       </footer>
     </div>
   )
