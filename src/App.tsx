@@ -7,7 +7,7 @@ export type Reminder = {
   id: string
   title: string
   body?: string
-  time: string // ISO
+  time: string // ISO string
   done: boolean
 }
 
