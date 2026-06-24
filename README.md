@@ -31,5 +31,5 @@
 - Deploy:
   - Frontend (Vercel)
   - Backend (Railway)
-- Deploy URL: https://memojiro-college-project-kmq5pa28x-maxim-smirnov.vercel.app/
+- Deploy URL: https://memojiro-college-project-kmq5pa28x-maxim-smirnov.vercel.app/ (Если не работает пробуйте с VPN)
 - Code Climate: [![Maintainability](https://qlty.sh/gh/eraserbtvv/projects/memojiro-college-project/maintainability.svg)](https://qlty.sh/gh/eraserbtvv/projects/memojiro-college-project)
