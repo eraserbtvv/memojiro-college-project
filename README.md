@@ -1,8 +1,9 @@
 # memojiro-college-project
 
 Простое приложение-напоминалка вдохновленная memojiro — 
-
+- GitHub репозиторий: https://github.com/eraserbtvv/memojiro-college-project
 - Stack: React + Vite + TypeScript, Backend — Express + JSON 
+- Демо видео проекта: https://drive.google.com/file/d/1G5jTMKW36BlA49HgxWPPBmPLFg9e4mUY/view?usp=drive_link
 - Local run:
 
   1. Установить зависимости
