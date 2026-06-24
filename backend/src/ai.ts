@@ -30,18 +30,24 @@ function extractTime(text: string): { hours: number, minutes: number } | null {
     return { hours: Number(exactTime[1]), minutes: Number(exactTime[2]) };
   }
 
-  const wordTime = text.match(/(?:^|\s)(?:в|at)\s+(\d{1,2})(?::(\d{2}))?(?:\s+(утра|вечера|дня|ночи|am|pm))?(?=\s|$|[.,!?])/i);
+  const wordTime = text.match(/(?:^|\s)(?:(в|к|at)\s+)?(\d{1,2})(?::(\d{2}))?(?:\s+(утра|вечера|дня|ночи|am|pm|ч|час(?:ов|а)?))?(?=\s|$|[.,!?])/i);
+  
   if (wordTime) {
-    let hours = Number(wordTime[1]);
-    const minutes = Number(wordTime[2] || 0);
-    const modifier = wordTime[3]?.toLowerCase();
+    const prefix = wordTime[1]; 
+    let hours = Number(wordTime[2]);
+    const minutesMatch = wordTime[3]; 
+    const modifier = wordTime[4]?.toLowerCase(); 
 
-    if (modifier) {
-      if (['вечера', 'pm'].includes(modifier) && hours < 12) hours += 12;
-      if (['дня'].includes(modifier) && hours < 12 && hours >= 1) hours += 12;
-      if (['утра', 'ночи', 'am'].includes(modifier) && hours === 12) hours = 0;
+    if (prefix || modifier || minutesMatch) {
+      const minutes = Number(minutesMatch || 0);
+
+      if (modifier) {
+        if (['вечера', 'pm'].includes(modifier) && hours < 12) hours += 12;
+        if (['дня'].includes(modifier) && hours < 12 && hours >= 1) hours += 12;
+        if (['утра', 'ночи', 'am'].includes(modifier) && hours === 12) hours = 0;
+      }
+      return { hours, minutes };
     }
-    return { hours, minutes };
   }
 
   return null;
@@ -62,14 +68,12 @@ function parseDateFromText(text: string): string {
   const month = moscowNow.getMonth() + 1
   const day = moscowNow.getDate()
 
-  // Вычисление Завтра (+1 день)
   const moscowTomorrow = new Date(moscowNow.getTime())
   moscowTomorrow.setDate(moscowTomorrow.getDate() + 1)
   const tomYear = moscowTomorrow.getFullYear()
   const tomMonth = moscowTomorrow.getMonth() + 1
   const tomDay = moscowTomorrow.getDate()
 
-  // Вычисление Послезавтра (+2 дня)
   const moscowDayAfterTomorrow = new Date(moscowNow.getTime())
   moscowDayAfterTomorrow.setDate(moscowDayAfterTomorrow.getDate() + 2)
   const datYear = moscowDayAfterTomorrow.getFullYear()
@@ -82,7 +86,6 @@ function parseDateFromText(text: string): string {
     const parsedMonth = MONTHS[monthName]
     let parsedYear = year
 
-    // Если запрошенный месяц уже прошел в этом году (например, сейчас июнь, а просят май), переносим на следующий год
     if (parsedMonth < month || (parsedMonth === month && parsedDay < day)) {
       parsedYear += 1
     }
@@ -103,7 +106,6 @@ function parseDateFromText(text: string): string {
     return moscowDateToUtc(parsedYear, parsedMonth, parsedDay, moscowNow.getHours(), moscowNow.getMinutes()).toISOString()
   }
 
-  // 2. ПРИОРИТЕТ: Промежуток времени (через Х часов)
   if (inHours) {
     const hours = Number(inHours[1])
     if (!Number.isNaN(hours)) {
@@ -112,7 +114,6 @@ function parseDateFromText(text: string): string {
     }
   }
 
-  // 3. ПРИОРИТЕТ: Послезавтра
   if (dayAfterTomorrow) {
     if (parsedTime) {
       return moscowDateToUtc(datYear, datMonth, datDay, parsedTime.hours, parsedTime.minutes).toISOString()
@@ -120,7 +121,6 @@ function parseDateFromText(text: string): string {
     return moscowDateToUtc(datYear, datMonth, datDay, 0, 0).toISOString()
   }
 
-  // 4. ПРИОРИТЕТ: Завтра
   if (tomorrow) {
     if (parsedTime) {
       return moscowDateToUtc(tomYear, tomMonth, tomDay, parsedTime.hours, parsedTime.minutes).toISOString()
@@ -128,8 +128,6 @@ function parseDateFromText(text: string): string {
     return moscowDateToUtc(tomYear, tomMonth, tomDay, 0, 0).toISOString()
   }
 
-  // 5. ПРИОРИТЕТ: Только время (или "сегодня + время")
-  // Если время уже прошло сегодня, оно автоматически перенесется на завтра
   if (parsedTime) {
     let candidate = moscowDateToUtc(year, month, day, parsedTime.hours, parsedTime.minutes)
     const candidateLocal = new Date(candidate.getTime() + MOSCOW_OFFSET_MINUTES * 60_000)
@@ -140,7 +138,6 @@ function parseDateFromText(text: string): string {
     return candidate.toISOString()
   }
 
-  // 6. ФАЛЛБЕК: Если вообще ничего не найдено (или просто написали "сегодня" без времени)
   const realUtcNow = new Date()
   return new Date(realUtcNow.getTime() + 3600_000).toISOString()
 }
