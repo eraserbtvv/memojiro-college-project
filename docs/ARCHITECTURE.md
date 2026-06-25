@@ -5,9 +5,6 @@
 
 Схема: Frontend (React) -> Backend API (Express) -> SQLite
 
-ERD:
-- reminders: id PK, title, body, time, done
-
 Use Cases:
 1. Создать напоминание — пользователь вводит название, время и опционально описание.
 2. Список напоминаний загружается с backend и отображается в UI.
